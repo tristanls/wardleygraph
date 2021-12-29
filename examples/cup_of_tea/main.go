@@ -39,7 +39,7 @@ func main() {
 	wg.MustDependsOn(hotWater, kettle)
 	wg.MustDependsOn(hotWater, water)
 	power := wg.MustComponent("Power")
-	wg.MustDependsOn(hotWater, power)
+	wg.MustDependsOn(kettle, power)
 	fmt.Println("dependencies created")
 
 	wg.MustExpressCharacteristic(cupOfTea, wg.MustCharacteristic(wardleygraph.UbiquityIV.Key))
