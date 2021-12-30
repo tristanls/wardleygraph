@@ -95,7 +95,7 @@ func (wg *WardleyGraph) ConfigureEvolution() (err error) {
 	}
 
 	for _, link := range wg.evolutionSpec() {
-		err = wg.sst.CreateLink(link.From, string(link.Rel), link.To, 1)
+		_, err = wg.sst.CreateLink(link.From, string(link.Rel), link.To, nil, 1)
 		if err != nil {
 			return err
 		}

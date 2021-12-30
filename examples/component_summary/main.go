@@ -3,12 +3,13 @@ package main
 import (
 	"fmt"
 
+	"github.com/tristanls/sst"
 	"github.com/tristanls/wardleygraph"
 )
 
 func main() {
 	conf := &wardleygraph.Config{
-		Name:     "wg_cup_of_tea",
+		Name:     "wg_cup_of_tea_summary",
 		Password: "",
 		URL:      "http://localhost:8529",
 		Username: "root",
@@ -170,21 +171,7 @@ func main() {
 	wg.MustExpressCharacteristic(power, wg.MustCharacteristic(wardleygraph.EfficiencyIV.Key))
 	wg.MustExpressCharacteristic(power, wg.MustCharacteristic(wardleygraph.DecisionDriversIV.Key))
 
-	fmt.Println("component characteristics configured")
-}
+	fmt.Println("cup of tea graph setup complete, generating summary component")
 
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.UbiquityIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.CertaintyIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.PublicationTypeIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.MarketIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.KnowledgeManagementIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.MarketPerceptionIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.UserPerceptionIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.IndustryPerceptionIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.FocusOfValueIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.UnderstandingIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.ComparisonIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.FailureIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.MarketActionIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.EfficiencyIV.Key))
-// wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.DecisionDriversIV.Key))
+	wg.MustCreateSummary("Tea Shop", []*sst.Node{cupOfTea, staff, tea, cup, hotWater, kettle, water, power})
+}
