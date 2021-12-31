@@ -174,4 +174,6 @@ func main() {
 	fmt.Println("cup of tea graph setup complete, generating summary component")
 
 	wg.MustCreateSummary("Tea Shop", []*sst.Node{cupOfTea, staff, tea, cup, hotWater, kettle, water, power})
+	wg.MustCreateSummary("Tea Shop (without Kettle)", []*sst.Node{cupOfTea, staff, tea, cup, hotWater, water, power})
+	wg.MustCreateSummary("Tea Shop (wo ktl, staff)", []*sst.Node{cupOfTea, tea, cup, hotWater, water, power})
 }
