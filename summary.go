@@ -169,7 +169,7 @@ func (wg *WardleyGraph) CreateSummary(name string, constituents []*sst.Node) (*s
 			}
 		}
 		fmt.Printf("Contains key: %v, data: %v\n", sst.MustNodeID(c), data)
-		_, err := wg.Contains(sum, c, data)
+		_, err := wg.ContainsWithData(sum, c, data)
 		if err != nil {
 			return nil, errors.Wrapf(err, "wardleygraph: failed to create Contains link from summary %v to constituent component %v", sum.Key, c.Key)
 		}

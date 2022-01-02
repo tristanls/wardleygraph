@@ -9,7 +9,7 @@ import (
 
 func main() {
 	conf := &wardleygraph.Config{
-		Name:     "wg_cup_of_tea",
+		Name:     "wg_im_a_map",
 		Password: "",
 		URL:      "http://localhost:8529",
 		Username: "root",
@@ -168,6 +168,35 @@ func main() {
 	wg.MustExpressCharacteristic(power, wg.MustCharacteristic(wardleygraph.DecisionDriversIV.Key))
 
 	fmt.Println("component characteristics configured")
+
+	m := wg.MustMap("I'm a map!")
+	wg.MustContainsAll(m, []*sst.Node{
+		business, public,
+		profit, thirstForTea,
+		cupOfTea, staff, tea, cup, hotWater, kettle, water, power,
+	})
+
+	m2 := wg.MustMap("I'm a smaller map")
+	wg.MustContainsAll(m2, []*sst.Node{
+		public,
+		thirstForTea,
+		cupOfTea, tea, cup, hotWater, kettle, water,
+	})
+
+	summary := wg.MustCreateSummary("Tea Shop", []*sst.Node{cupOfTea, staff, tea, cup, hotWater, kettle, water, power})
+	m3 := wg.MustMap("Map with summary")
+	wg.MustContainsAll(m3, []*sst.Node{
+		business, public,
+		profit, thirstForTea,
+		summary,
+	})
+
+	m4 := wg.MustMap("Map with summary and detail")
+	wg.MustContainsAll(m4, []*sst.Node{
+		business, public,
+		profit, thirstForTea,
+		summary, hotWater, kettle, water,
+	})
 }
 
 // wg.MustExpressCharacteristic(e, wg.MustCharacteristic(wardleygraph.UbiquityIV.Key))

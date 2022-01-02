@@ -31,6 +31,7 @@ func New(config *Config) (*WardleyGraph, error) {
 		NodeCollections: []string{
 			string(Component),
 			string(EvolutionCharacteristic),
+			string(Map),
 			string(StageOfEvolution),
 			string(UserNeed),
 		},

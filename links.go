@@ -2,6 +2,7 @@ package wardleygraph
 
 import (
 	"context"
+	"fmt"
 
 	arango "github.com/arangodb/go-driver"
 	"github.com/mitchellh/mapstructure"
@@ -13,12 +14,20 @@ type ContainsLinkData struct {
 	LinkSummary LinkSummary `json:"linkSummary,omitempty"`
 }
 
-func (wg *WardleyGraph) DependsOn(dependent, dependency *sst.Node) (*sst.Link, error) {
+func validDependsOn(dependent, dependency *sst.Node) error {
 	if dependent.Prefix != string(Component)+"/" {
-		return nil, dependentIsNotComponent
+		return dependentIsNotComponent
 	}
 	if dependency.Prefix != string(Component)+"/" {
-		return nil, dependencyIsNotComponent
+		return dependencyIsNotComponent
+	}
+	return nil
+}
+
+func (wg *WardleyGraph) DependsOn(dependent, dependency *sst.Node) (*sst.Link, error) {
+	err := validDependsOn(dependent, dependency)
+	if err != nil {
+		return nil, err
 	}
 	return wg.sst.CreateLink(dependent, string(DependsOn), dependency, nil, 1)
 }
@@ -31,12 +40,40 @@ func (wg *WardleyGraph) MustDependsOn(dependent, dependency *sst.Node) *sst.Link
 	return link
 }
 
-func (wg *WardleyGraph) ExpressUserNeed(customer, need *sst.Node) (*sst.Link, error) {
+func (wg *WardleyGraph) DependsOnAll(dependent *sst.Node, dependencies []*sst.Node) ([]*sst.Link, error) {
+	links := make([]*sst.Link, len(dependencies))
+	var err error
+	for i, d := range dependencies {
+		links[i], err = wg.DependsOn(dependent, d)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return links, nil
+}
+
+func (wg *WardleyGraph) MustDependsOnAll(dependent *sst.Node, dependencies []*sst.Node) []*sst.Link {
+	links, err := wg.DependsOnAll(dependent, dependencies)
+	if err != nil {
+		panic(err)
+	}
+	return links
+}
+
+func validExpressUserNeed(customer, need *sst.Node) error {
 	if customer.Prefix != string(Component)+"/" {
-		return nil, customerIsNotComponent
+		return customerIsNotComponent
 	}
 	if need.Prefix != string(UserNeed)+"/" {
-		return nil, needIsNotUserNeed
+		return needIsNotUserNeed
+	}
+	return nil
+}
+
+func (wg *WardleyGraph) ExpressUserNeed(customer, need *sst.Node) (*sst.Link, error) {
+	err := validExpressUserNeed(customer, need)
+	if err != nil {
+		return nil, err
 	}
 	return wg.sst.CreateLink(customer, string(Expresses), need, nil, 1)
 }
@@ -49,12 +86,20 @@ func (wg *WardleyGraph) MustExpressUserNeed(customer, need *sst.Node) *sst.Link 
 	return link
 }
 
-func (wg *WardleyGraph) FulfilledBy(need, dependency *sst.Node) (*sst.Link, error) {
+func validFulfilledBy(need, dependency *sst.Node) error {
 	if need.Prefix != string(UserNeed)+"/" {
-		return nil, needIsNotUserNeed
+		return needIsNotUserNeed
 	}
 	if dependency.Prefix != string(Component)+"/" {
-		return nil, dependencyIsNotComponent
+		return dependencyIsNotComponent
+	}
+	return nil
+}
+
+func (wg *WardleyGraph) FulfilledBy(need, dependency *sst.Node) (*sst.Link, error) {
+	err := validFulfilledBy(need, dependency)
+	if err != nil {
+		return nil, err
 	}
 	return wg.sst.CreateLink(need, string(FulfilledBy), dependency, nil, 1)
 }
@@ -67,35 +112,97 @@ func (wg *WardleyGraph) MustFulfilledBy(need, dependency *sst.Node) *sst.Link {
 	return link
 }
 
-func (wg *WardleyGraph) Contains(container, content *sst.Node, data *ContainsLinkData) (*sst.Link, error) {
-	if container.Prefix != string(Component)+"/" {
-		return nil, containerIsNotComponent
-	}
-	if content.Prefix != string(Component)+"/" {
-		return nil, contentIsNotComponent
-	}
-	var d map[string]interface{}
-	err := mapstructure.Decode(data, &d)
-	if err != nil {
-		return nil, errors.Wrapf(err, "wardleygraph: failed to create Contains link from %v to %v", container.Key, content.Key)
-	}
-	return wg.sst.CreateLink(container, string(Contains), content, d, 1)
+func invalidContains(container, content string) error {
+	return errors.New(fmt.Sprintf("wardleygraph: %v cannot contain %v", container, content))
 }
 
-func (wg *WardleyGraph) MustContains(container, content *sst.Node, data *ContainsLinkData) *sst.Link {
-	link, err := wg.Contains(container, content, data)
+func validContains(container, content *sst.Node) error {
+	switch container.Prefix {
+	case string(Component) + "/":
+		if content.Prefix != string(Component)+"/" {
+			return invalidContains(container.Prefix, content.Prefix)
+		}
+	case string(Map) + "/":
+		if content.Prefix != string(Component)+"/" && content.Prefix != string(UserNeed)+"/" {
+			return invalidContains(container.Prefix, content.Prefix)
+		}
+	default:
+		return invalidContains(container.Prefix, content.Prefix)
+	}
+	return nil
+}
+
+func (wg *WardleyGraph) Contains(container, content *sst.Node) (*sst.Link, error) {
+	err := validContains(container, content)
+	if err != nil {
+		return nil, err
+	}
+	return wg.sst.CreateLink(container, string(Contains), content, nil, 1)
+}
+
+func (wg *WardleyGraph) MustContains(container, content *sst.Node) *sst.Link {
+	link, err := wg.Contains(container, content)
 	if err != nil {
 		panic(err)
 	}
 	return link
 }
 
-func (wg *WardleyGraph) ExpressCharacteristic(component, characteristic *sst.Node) (*sst.Link, error) {
+func (wg *WardleyGraph) ContainsAll(container *sst.Node, content []*sst.Node) ([]*sst.Link, error) {
+	links := make([]*sst.Link, len(content))
+	var err error
+	for i, c := range content {
+		links[i], err = wg.Contains(container, c)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return links, nil
+}
+
+func (wg *WardleyGraph) MustContainsAll(container *sst.Node, content []*sst.Node) []*sst.Link {
+	links, err := wg.ContainsAll(container, content)
+	if err != nil {
+		panic(err)
+	}
+	return links
+}
+
+func (wg *WardleyGraph) ContainsWithData(container, content *sst.Node, data *ContainsLinkData) (*sst.Link, error) {
+	err := validContains(container, content)
+	if err != nil {
+		return nil, err
+	}
+	var d map[string]interface{}
+	err = mapstructure.Decode(data, &d)
+	if err != nil {
+		return nil, errors.Wrapf(err, "wardleygraph: failed to create Contains link from %v to %v", container.Key, content.Key)
+	}
+	return wg.sst.CreateLink(container, string(Contains), content, d, 1)
+}
+
+func (wg *WardleyGraph) MustContainsWithData(container, content *sst.Node, data *ContainsLinkData) *sst.Link {
+	link, err := wg.ContainsWithData(container, content, data)
+	if err != nil {
+		panic(err)
+	}
+	return link
+}
+
+func validExpressCharacteristic(component, characteristic *sst.Node) error {
 	if component.Prefix != string(Component)+"/" && component.Prefix != string(UserNeed) {
-		return nil, componentIsNotComponentOrUserNeed
+		return componentIsNotComponentOrUserNeed
 	}
 	if characteristic.Prefix != string(EvolutionCharacteristic)+"/" {
-		return nil, characteristicIsnt
+		return characteristicIsnt
+	}
+	return nil
+}
+
+func (wg *WardleyGraph) ExpressCharacteristic(component, characteristic *sst.Node) (*sst.Link, error) {
+	err := validExpressCharacteristic(component, characteristic)
+	if err != nil {
+		return nil, err
 	}
 	// FIXME: should be a transaction
 

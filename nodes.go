@@ -10,14 +10,13 @@ type NodeType string
 var (
 	Component               NodeType = "Component"
 	EvolutionCharacteristic NodeType = "EvolutionCharacteristic"
+	Map                     NodeType = "Map"
 	StageOfEvolution        NodeType = "StageOfEvolution"
 	UserNeed                NodeType = "UserNeed"
 )
 
 var (
 	characteristicIsnt                = errors.New("wardleygraph: characteristic is not an EvolutionCharacteristic")
-	containerIsNotComponent           = errors.New("wardleygraph: container is not a Component")
-	contentIsNotComponent             = errors.New("wardleygraph: content is not a Component")
 	componentIsNotComponentOrUserNeed = errors.New("wardleygraph: component is neither Component nor UserNeed")
 	customerIsNotComponent            = errors.New("wardleygraph: customer is not a Component")
 	dependentIsNotComponent           = errors.New("wardleygraph: dependent is not a Component")
@@ -47,6 +46,30 @@ func (wg *WardleyGraph) ComponentWithData(name string, data map[string]interface
 
 func (wg *WardleyGraph) MustComponentWithData(name string, data map[string]interface{}) *sst.Node {
 	node, err := wg.ComponentWithData(name, data)
+	if err != nil {
+		panic(err)
+	}
+	return node
+}
+
+func (wg *WardleyGraph) Map(name string) (*sst.Node, error) {
+	return wg.MapWithData(name, nil)
+}
+
+func (wg *WardleyGraph) MustMap(name string) *sst.Node {
+	node, err := wg.Map(name)
+	if err != nil {
+		panic(err)
+	}
+	return node
+}
+
+func (wg *WardleyGraph) MapWithData(name string, data map[string]interface{}) (*sst.Node, error) {
+	return wg.sst.CreateNode(string(Map), name, data, 1)
+}
+
+func (wg *WardleyGraph) MustMapWithData(name string, data map[string]interface{}) *sst.Node {
+	node, err := wg.MapWithData(name, data)
 	if err != nil {
 		panic(err)
 	}
